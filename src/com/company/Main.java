@@ -42,10 +42,9 @@ public class Main {
                               int sectionNumber, String lectureType, String title, int hours, String days, String time,
                               String room, String instructor, int maximumEnrollment, int seatsAvailable, String message,
                               String term, String beginDate, String endDate, String url) {
-        //VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-        //(%s,%s,%s,%s,%s,%s,%s,%s,%d,%s,%s,%s,%s,%d,%d,%s,%s,%s,%s,%s)
-        String sql = String.format("INSERT INTO Sections" +
-                        " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", crn, courseID, department,
+
+        String sql = String.format("INSERT INTO Sections VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                crn, courseID, department,
                 discipline, courseNumber, sectionNumber, lectureType, title, hours, days,
                 time, room, instructor, maximumEnrollment, seatsAvailable, message, term,
                 beginDate, endDate, url);
@@ -93,18 +92,18 @@ public class Main {
         }
     }
 
-    public void dropSingleDepartment(String targetDept) {
+    public void dropSingleDepartment(String targetDeptCode) {
         try {
             Connection conn = this.connect();
             PreparedStatement pstmtDTD = conn.prepareStatement("DELETE FROM Sections " +
-                    "WHERE DEPARTMENT_NAME = " + targetDept);
+                    "WHERE DEPARTMENT = '" + targetDeptCode.toUpperCase() + "'");
             pstmtDTD.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-    public void restoreSingleDepartment(String targetDeptCode) {
+    public void restoreSingleDepartment(String targetDeptName) {
         try {
             int hours;
             int maximumEnrollment = 0;
@@ -129,15 +128,14 @@ public class Main {
             ArrayList<Section> sections = new ArrayList<>();
 
             Connection conn = this.connect();
-            //this SQL statement is different from the postSections() method
-            String statement = "SELECT * FROM Departments WHERE DEPARTMENT_CODE LIKE " + targetDeptCode.toUpperCase();
+            String statement = "SELECT * FROM Departments";
             ResultSet rs = conn.createStatement().executeQuery(statement);
             while (rs.next()) {
                 String dCode = rs.getString("DEPARTMENT_CODE");
                 Document doc = Jsoup.connect("https://aps2.missouriwestern.edu/schedule/Default.asp?tck=201910")
                         .data("course_number", "")
                         .data("subject", "ALL")
-                        .data("department", dCode)
+                        .data("department", targetDeptName)//targetDeptName
                         .data("display_closed", "YES")
                         .data("course_type", "ALL")
                         .timeout(100 * 1000).post();
@@ -442,6 +440,8 @@ public class Main {
         app.createTables();
         app.loadDB();
         app.postSections();
+        app.dropSingleDepartment("AF");
+        app.restoreSingleDepartment("Academic Affairs");
     }
 
     public class Section {
